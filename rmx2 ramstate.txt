@@ -1,0 +1,85 @@
+Memory layout:
+7E1E81	u8	Currently-selected level on level select screen
+7E1E82	u8	Copy of 7E1E81
+7E1E83	u8	Whether to show stage info at stage select (00=yes, FF=no)
+7E1FB3	u8	Extra life count
+7E1FB6	u8	Sub-Tank 1 (00=none, 80=empty...8E=full)
+7E1FB7	u8	Sub-Tank 2 (00=none, 80=empty...8E=full)
+7E1FB8	u8	Sub-Tank 3 (00=none, 80=empty...8E=full)
+7E1FB9	u8	Sub-Tank 4 (00=none, 80=empty...8E=full)
+7E1FC0	s16	Spin Wheel weapon energy
+7E1FC4	s16	S.Chain weapon energy
+
+Level Select IDs:
+00	02	Wire Sponge
+09	01	Morph Moth
+12	80	X (toggle showing stage info)
+1B	04	Flame Stag
+24	05	Magna Centipede
+2D	07	Overdrive Ostrich
+36	03	Bubble Crab
+3F	FF	X-Hunter
+48	08	Wheel Gator
+51	06	Crystal Snail
+
+
+Speed run route:
+
+Intro stage
+
+Wire Sponge (Weather Control Stage)
+- Get Heart
+- Get Sub-Tank
+
+Wheel Gator (Dinosaur Tank Stage)
+- Get Arm Upgrade
+- Get Heart
+
+Flame Stag (Volcanic Zone Stage)
+- Get Sub-Tank
+- Get Heart
+
+Magna Centipede (Central Computer Stage)
+- Get Heart
+- Get Sub-Tank
+
+Crystal Snail (Energen Crystal Stage)
+- Get Heart
+- Get Helmet Upgrade
+
+Overdrive Ostrich (Desert Base Stage)
+- Get Heart
+- Get Boots Upgrade
+
+Bubble Crab (Deep-Sea Base Stage)
+- Get Heart
+- Get Sub-Tank
+
+Morph Moth (Robot Scrap Stage)
+- Get Heart
+- Get Armor Upgrade
+
+X-Hunter 1
+- Beat Violen
+
+X-Hunter 2
+- Beat Serges
+
+X-Hunter 3
+- Get Shoryuken
+- Beat Agile
+
+Sigma 1
+- Beat Magna Centipede
+- Beat Flame Stag
+- Beat Bubble Crab
+- Beat Wire Sponge
+- Beat Overdrive Ostrich
+- Beat Morph Moth
+- Beat Wheel Gator
+- Beat Crystal Snail
+
+Sigma 2
+- Beat Zero
+- Beat Sigma
+- Beat Neo Sigma
