@@ -449,9 +449,9 @@ route_metatable:
 	{reorg $006FD80}
 
 initial_menu_strings:
-	// I'm too lazy to rework compressed the compressed font, so I use this to
-	// overwrite the ` character in VRAM.  The field used for the "attribute"
-	// of the "text" just becomes the high byte of each pair of bytes.
+	// I'm too lazy to rework the compressed font, so I use this to overwrite
+	// the ` character in VRAM.  The field used for the "attribute" of the
+	// "text" just becomes the high byte of each pair of bytes.
 	macro tilerow vrambase, rownum, col7, col6, col5, col4, col3, col2, col1, col0
 		db 1, (({col7} & 2) << 6) | (({col6} & 2) << 5) | (({col5} & 2) << 4) | (({col4} & 2) << 3) | (({col3} & 2) << 2) | (({col2} & 2) << 1) | ({col1} & 2) | (({col0} & 2) >> 1)
 		dw (({vrambase}) + (({rownum}) * 2)) >> 1
