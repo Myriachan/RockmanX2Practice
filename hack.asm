@@ -18,7 +18,7 @@ incbin "Rockman X 2 (J).smc"
 // Constants
 // Version tags
 eval version_major 1
-eval version_minor 0
+eval version_minor 1
 eval version_revision 0
 // RAM addresses
 eval title_screen_option $7E003C
@@ -107,6 +107,55 @@ patch_stage_select_reset_state:
 	// anything if you die with zero lives.
 patch_infinite_lives:
 	bra $0099B2
+{loadpc}
+
+
+{savepc}
+	// These prevent the teleporters in the "boss repeat"/"teleporter" stage
+	// from disabling themselves after beating a boss.  This allows the runner
+	// to repeat the boss as much as she wants.
+	// Unfortunately, each boss has their own assembly code to patch.
+	//
+	// Morph Moth
+	{reorg $298D99}
+	nop  // NOP's TSB of $01 into $7E1FD9
+	nop
+	nop
+	// Wire Sponge
+	{reorg $04A752}
+	nop  // NOP's TSB of $02 into $7E1FD9
+	nop
+	nop
+	// Bubble Crab
+	{reorg $07CA69}
+	nop  // NOP's TSB of $04 into $7E1FD9
+	nop
+	nop
+	// Flame Stag
+	{reorg $04C2F1}
+	nop  // NOP's TSB of $08 into $7E1FD9
+	nop
+	nop
+	// Magna Centipede
+	{reorg $04B1F3}
+	nop  // NOP's TSB of $10 into $7E1FD9
+	nop
+	nop
+	// Crystal Snail
+	{reorg $07BD6B}
+	nop  // NOP's TSB of $20 into $7E1FD9
+	nop
+	nop
+	// Overdrive Ostrich
+	{reorg $08F0AE}
+	nop  // NOP's TSB of $40 into $7E1FD9
+	nop
+	nop
+	// Wheel Gator
+	{reorg $03BFDF}
+	nop  // NOP's TSB of $80 into $7E1FD9
+	nop
+	nop
 {loadpc}
 
 
