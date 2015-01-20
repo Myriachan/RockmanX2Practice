@@ -17,8 +17,8 @@ incbin "Rockman X 2 (J).smc"
 
 // Constants
 // Version tags
-eval version_major 0
-eval version_minor 3
+eval version_major 1
+eval version_minor 0
 eval version_revision 0
 // RAM addresses
 eval title_screen_option $7E003C
