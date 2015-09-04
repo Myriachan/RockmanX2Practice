@@ -23,6 +23,8 @@ eval version_revision 0
 // RAM addresses
 eval title_screen_option $7E003C
 eval controller_1_current $7E00A8
+eval controller_1_unknown $7E00AA
+eval controller_1_unknown2 $7E00AC
 eval controller_1_new_presses $7E00AE
 eval current_play_state $7E00D2
 eval countdown_play_state $7E00D6
@@ -31,6 +33,8 @@ eval state_vars $7E1FA0
 eval current_level $7E1FAD
 eval xhunter_level $7E1FAE
 eval life_count $7E1FB3
+// SRAM addresses for saved states
+eval sram_dma_bank $770000
 // Mode IDs (specific to this hack)
 eval mode_id_anypercent 0  // Any%, which just means Zero isn't saved.
 // Route IDs
@@ -175,9 +179,9 @@ patch_disable_ending:
 
 {savepc}
 	{reorg $08BF41}
-	// Allow pressing select + R to simulate death.
-	// This hook activates when R is pressed and the game wants to change
-	// the weapon.
+	// Allow pressing select + start to simulate death.
+	// This hook activates when the game is checking to see whether the
+	// player is pressing L or R to change weapons.
 patch_death_command_hook:
 	jml death_command_hook
 {loadpc}
@@ -413,23 +417,24 @@ stage_select_reset_state:
 	rtl
 
 
-// Called when the player presses R during play.  Select+R is a request to
-// kill Rockman X, in order to restart.
+// Called when the game is checking for L/R for changing weapons.
+// Select+Start is a request to kill Rockman X, in order to restart.
+// I hook this particular location because it more or less guarantees that the
+// game engine is in a state in which I can do this.
 death_command_hook:
 	// Entering with 8-bit A and 8-bit X.
-	// The replaced code checks for R being pressed, so we copy that here.
-	bit.b #$10
-	beq .jump_to_rts
 
-	// Check for the select button being held when R was pressed.
+	// Check for Select + Start.
 	lda.w {controller_1_current} + 1
-	and.b #{select_button} >> 8
-	beq .not_killing
+	and.b #$30
+	cmp.b #$30
+	bne .original_code
 
-	// Check for being in the actively-playing state.
+	// Check for being in the normal state, so as to not activate this code
+	// unless we're in the expected state.
 	lda.w {current_play_state}
 	cmp.b #{play_state_normal}
-	bne .not_killing
+	bne .original_code
 
 	// OK, kill him.  The countdown $01 fades out immediately.  $F0 is the
 	// normal countdown for death.
@@ -438,20 +443,21 @@ death_command_hook:
 	lda.b #$01
 	sta.w {countdown_play_state}
 
-	// Clear the L/R controller state, because otherwise, the death state
-	// will disable controller input and cause R to be pressed indefinitely.
-	lda.b #$30
-	trb.b $3A
-
 	// Jump back to an RTS.  If neither L nor R is being pressed, the game
 	// branches to this RTS, so this is the right place to go.  Labeled
 	// "not_pressing_R" in sub_8BECC in my disassembly.
 .jump_to_rts:
-	jml $08BFAC
+	bra .not_pressing_R  // save 2 bytes by jumping to other jml
 
-.not_killing:
-	// Jump back to the code that increments the weapon counter.
+.original_code:
+	// The replaced code checks for R being pressed, so we copy that here.
+	// We need to reload A from D+$3A, though, because we destroyed it above.
+	lda.b $3A
+	bit.b #$10
+	beq .not_pressing_R
 	jml $08BF45
+.not_pressing_R:
+	jml $08BFAC
 
 
 // Use this label >> 16 as the bank for the following route and mode tables.
@@ -978,5 +984,261 @@ state_data_100percent_ostrich3rd:
 	db $00,$80,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
 	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$5C,$00,$DC,$00,$DC
 	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$FF,$00,$00,$00,$00,$00,$58
+
+{loadpc}
+
+
+{savepc}
+	// Hook NMI
+	{reorg $00FFEA}
+	dw $FFA0
+	{reorg $00FFFA}
+	dw $FFA0
+	{reorg $00FFA0}
+	jml nmi_hook
+
+	// Change SRAM size to 256 KB
+	{reorg $00FFD8}
+	db $08
+{loadpc}
+
+
+{savepc}
+	// Saved state hacks
+	{reorg $03FA00}
+nmi_hook:
+
+	rep #$38
+	pha
+	phx
+	phy
+	phd
+	phb
+
+	rep #$30
+	lda.b {controller_1_unknown2}
+	and.b {controller_1_current}
+	bne .have_controller_1_data
+	jmp .b
+
+.have_controller_1_data:
+	lda.b {controller_1_current}
+	and.w #$2010   // Select + R
+	cmp.w #$2010
+	beq .select_r_pressed
+	jmp .b
+
+.select_r_pressed:
+	sep #$20
+
+	// Store DMA to SRAM
+	ldy.w #0
+	ldx.w #0
+
+	sep #$20
+.save_dma_reg_loop:
+	lda.w $4300, x
+	sta.l {sram_dma_bank}, x
+	inx
+	iny
+	cpy.w #$000B
+	bne .save_dma_reg_loop
+	cpx.w #$007B
+	beq .save_dma_regs_done
+	inx
+	inx
+	inx
+	inx
+	inx
+	ldy.w #0
+	jmp .save_dma_reg_loop
+	// End of DMA to SRAM
+
+.save_dma_regs_done:
+	jsr .ppuoff
+	lda.b #$80
+	sta.w $4310
+	jsr .func_dma2
+
+	sep #$20
+	rep #$10
+	lda.b #$81    // 00 load, 80 save
+	sta.w $4310
+	lda.b #$39
+	sta.w $4311
+	jmp .end
+
+.b:
+	rep #$20
+	lda.b {controller_1_unknown2}
+	and.b {controller_1_current}
+	bne .have_controller_1_data_2
+	sep #$20
+	jmp .c
+
+.have_controller_1_data_2:
+	lda.b {controller_1_current}
+	and.w #$2020   // Select + L
+	cmp.w #$2020
+	beq .select_l_pressed
+	sep #$20
+	jmp .c
+
+.select_l_pressed:
+	sep #$20
+
+	// Stop sound effects
+	stz.w $2141
+	stz.w $2142
+	stz.w $2143
+	lda.b #$F1
+	sta.w $2140
+
+	stz.w $420C
+	jsr .ppuoff
+	stz.w $4310
+	jsr .func_dma2
+
+	// Restart music
+	rep #$20
+
+	// Rewrite inputs in ram to reflect the loading inputs and not saving inputs
+	lda.b {controller_1_current}
+	eor.w #$2010
+	ora.w #$2020
+	sta.b {controller_1_unknown}
+	sta.b {controller_1_current}
+	sta.b {controller_1_unknown2}
+
+	// Load DMA from SRAM
+	ldy.w #0
+	ldx.w #0
+
+	sep #$20
+.load_dma_regs_loop:
+	lda.l {sram_dma_bank}, x
+	sta.w $4300, x
+	inx
+	iny
+	cpy.w #$000B
+	bne .load_dma_regs_loop
+	cpx.w #$007B
+	beq .load_dma_regs_done
+	inx
+	inx
+	inx
+	inx
+	inx
+	ldy.w #0
+	jmp .load_dma_regs_loop
+	// End of DMA from SRAM
+
+	// Continue with WRAM DMA and cleanup
+.load_dma_regs_done:
+	sep #$20
+	rep #$10
+	lda.b #$01
+	sta.w $4310
+	lda.b #$80
+	sta.w $2115
+	lda.b #$18
+	sta.w $4311
+	jmp .end
+
+.ppuoff:
+	lda.b #$80
+	//sta.b $13
+	sta.w $2100
+	stz.w $4200
+	rts
+
+.func_dma1:
+	ldx.w #$7500  // SRAM address >> 8
+	ldy.w #$0000  // VRAM address >> 1
+	lda.b #$80    // size >> 8
+	jsr .func_dma1b
+	ldx.w #$7600  // SRAM address >> 8
+	ldy.w #$4000  // VRAM address >> 1
+	lda.b #$80    // size >> 8
+	jsr .func_dma1b
+	rts
+
+.func_dma1b:
+	sty.w $2116
+	stz.w $4312
+	stx.w $4313
+	stz.w $4315
+	sta.w $4316
+	stz.w $2115
+	lda.w $4311
+	cmp.b #$39
+	bne .skip_2139_write
+	lda.w $2139
+.skip_2139_write:
+	lda.b #$02
+	sta.w $420B
+	rts
+
+.func_dma2:
+	plx
+	stx.w $4318          // HDMA current low = 0
+
+	stz.w $2181          // WRAM low = 0
+	stz.w $4312          // HDMA start low = 0
+
+	ldy.w #$0071         // Copy to bank 71
+	ldx.w #$0000         // Copy 7FFF bytes from 7E0000-7E7FFF
+	jsr .func_dma2b
+	iny                  // Copy to bank 72
+	ldx.w #$0080         // Copy 7FFF bytes from 7E8000-7EFFFF
+	jsr .func_dma2b
+	iny                  // Copy to bank 73
+	ldx.w #$0100         // Copy 7FFF bytes from 7F0000-7F7FFF
+	jsr .func_dma2b
+	iny                  // Copy to bank 74
+	ldx.w #$0180         // Copy 7FFF bytes from 7F8000-7FFFFF
+	jsr .func_dma2b
+
+	ldx.w $4318
+	phx
+	rts
+
+.func_dma2b:
+	stz.w $4313          // HDMA start high
+	sty.w $4314          // HDMA start bank = Y
+	stx.w $2182          // WRAM start high + bank
+	lda.b #$80
+	sta.w $4311          // Select WRAM for DMA
+	sta.w $4316          // Bytes to be transferred, 0x7FFF bytes (FFFF-8000)
+	lda.b #$02
+	sta.w $420B          // Start DMA
+	rts
+
+.end:
+	jsr .func_dma1
+
+	lda.b $C3
+	sta.w $4200
+	lda.b $C4
+	sta.w $420C
+	lda.b $B4
+	sta.w $2100
+
+	lda.w $2142
+	sta.l $7EFFFE
+	jmp .d
+
+.c:
+	lda.b {controller_1_current}
+	sta.l $704218
+
+.d:
+	rep #$38
+	plb
+	pld
+	ply
+	plx
+	pla
+	jml $7E2000          // Jump to normal NMI handler in RAM
 
 {loadpc}
