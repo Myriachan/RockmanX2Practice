@@ -18,11 +18,14 @@ incbin "Rockman X 2 (J).smc"
 // Constants
 // Version tags
 eval version_major 1
-eval version_minor 1
+eval version_minor 2
 eval version_revision 0
 // RAM addresses
 eval title_screen_option $7E003C
-eval controller_data $7E00A9
+eval controller_1_current $7E00A8
+eval controller_1_new_presses $7E00AE
+eval current_play_state $7E00D2
+eval countdown_play_state $7E00D6
 eval unknown_level_flag $7E1EBF
 eval state_vars $7E1FA0
 eval current_level $7E1FAD
@@ -48,7 +51,9 @@ eval level_id_agile 11
 eval level_id_teleporter 12
 eval level_id_sigma 13  // fake
 // Other constants
-eval select_button $20
+eval play_state_normal $04
+eval play_state_death $06
+eval select_button $2000
 eval stage_select_id_hunter $FF
 eval stage_select_id_x $80
 eval unknown_level_flag_value_normal $01
@@ -169,6 +174,15 @@ patch_disable_ending:
 
 
 {savepc}
+	{reorg $08BF41}
+	// Allow pressing select + R to simulate death.
+	// This hook activates when R is pressed and the game wants to change
+	// the weapon.
+patch_death_command_hook:
+	jml death_command_hook
+{loadpc}
+
+{savepc}
 	{reorg $0090E2}
 	// Change where Rockman starts on the title screen, which is hardcoded.
 patch_title_rockman_default_location:
@@ -247,8 +261,8 @@ choose_level_hook:
 .select_check:
 	// Holding the select button?
 	pha
-	lda.w {controller_data}
-	and.b #{select_button}
+	lda.w {controller_1_current} + 1
+	and.b #{select_button} >> 8
 	beq .do_route_lookup
 
 	// If so, add 10 to the index into the route table.
@@ -397,6 +411,47 @@ stage_select_reset_state:
 	sta.b $2C
 	cmp.b #8
 	rtl
+
+
+// Called when the player presses R during play.  Select+R is a request to
+// kill Rockman X, in order to restart.
+death_command_hook:
+	// Entering with 8-bit A and 8-bit X.
+	// The replaced code checks for R being pressed, so we copy that here.
+	bit.b #$10
+	beq .jump_to_rts
+
+	// Check for the select button being held when R was pressed.
+	lda.w {controller_1_current} + 1
+	and.b #{select_button} >> 8
+	beq .not_killing
+
+	// Check for being in the actively-playing state.
+	lda.w {current_play_state}
+	cmp.b #{play_state_normal}
+	bne .not_killing
+
+	// OK, kill him.  The countdown $01 fades out immediately.  $F0 is the
+	// normal countdown for death.
+	lda.b #{play_state_death}
+	sta.w {current_play_state}
+	lda.b #$01
+	sta.w {countdown_play_state}
+
+	// Clear the L/R controller state, because otherwise, the death state
+	// will disable controller input and cause R to be pressed indefinitely.
+	lda.b #$30
+	trb.b $3A
+
+	// Jump back to an RTS.  If neither L nor R is being pressed, the game
+	// branches to this RTS, so this is the right place to go.  Labeled
+	// "not_pressing_R" in sub_8BECC in my disassembly.
+.jump_to_rts:
+	jml $08BFAC
+
+.not_killing:
+	// Jump back to the code that increments the weapon counter.
+	jml $08BF45
 
 
 // Use this label >> 16 as the bank for the following route and mode tables.
