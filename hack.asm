@@ -1008,24 +1008,51 @@ state_data_100percent_ostrich3rd:
 	{reorg $03FA00}
 nmi_hook:
 
+	// Rather typical NMI prolog code
 	rep #$38
 	pha
 	phx
 	phy
 	phd
 	phb
+	lda.w #$0000
+	tcd
 
-	rep #$30
-	lda.b {controller_1_unknown2}
-	and.b {controller_1_current}
+	// Don't interfere with NMI as much as possible.
+	// Only execute when select is pressed.
+	lda.b {controller_1_current}
+	bit.w #$2000
+	beq .c_skip_lda
+	bra .check_controller
+
+.c:
+	lda.b {controller_1_current}
+.c_skip_lda:
+	sta.l $704218
+.d:
+	rep #$38
+	jml $7E200B          // Jump to normal NMI handler in RAM, skipping the
+	                     // prolog code, since we already did it.
+
+.check_controller:
+	// Clear the bank register so that we know register writes work correctly.
+	ldy.w #$0000
+	phy
+	plb
+	plb
+
+	// Mask controller.
+	lda.b {controller_1_current}
+	and.b {controller_1_unknown2}
 	bne .have_controller_1_data
-	jmp .b
+	bra .jmp_b
 
 .have_controller_1_data:
 	lda.b {controller_1_current}
 	and.w #$2010   // Select + R
 	cmp.w #$2010
 	beq .select_r_pressed
+.jmp_b:
 	jmp .b
 
 .select_r_pressed:
@@ -1227,18 +1254,5 @@ nmi_hook:
 	lda.w $2142
 	sta.l $7EFFFE
 	jmp .d
-
-.c:
-	lda.b {controller_1_current}
-	sta.l $704218
-
-.d:
-	rep #$38
-	plb
-	pld
-	ply
-	plx
-	pla
-	jml $7E2000          // Jump to normal NMI handler in RAM
 
 {loadpc}
