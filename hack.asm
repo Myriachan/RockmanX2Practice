@@ -178,6 +178,14 @@ patch_disable_ending:
 
 
 {savepc}
+	{reorg $009715}
+	// Disable the stage intros for the 8 mavericks.
+patch_disable_stage_intros:
+	bra $009708
+{loadpc}
+
+
+{savepc}
 	{reorg $08BF41}
 	// Allow pressing select + start to simulate death.
 	// This hook activates when the game is checking to see whether the
