@@ -186,6 +186,17 @@ patch_disable_stage_intros:
 
 
 {savepc}
+	{reorg $03F2E6}
+	// Disable the "TV screen" flashing effect on stage select.
+patch_disable_flashy_effect:
+	// $7E1F53 contains a counter that goes 012012012012... and overlays the
+	// annoying effect when it is zero.  Just force it to 1.
+	lda.b #1
+	bra $03F2ED
+{loadpc}
+
+
+{savepc}
 	{reorg $08BF41}
 	// Allow pressing select + start to simulate death.
 	// This hook activates when the game is checking to see whether the
