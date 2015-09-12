@@ -197,6 +197,25 @@ patch_disable_flashy_effect:
 
 
 {savepc}
+	// Make the scrolling to the Counter-Hunters' island instant.
+	// The "PEA" is to trick the "RTS" at $2AAE7A and $2AAEAD into jumping
+	// to $2AAECE afterward, fixing the palette.
+patch_disable_scroll_up:
+	{reorg $2AAE62}
+	lda.w #$0100
+	sta.b $08
+	pea ($2AAECE - 1) & $00FFFF
+	bra $2AAE72
+patch_disable_scroll_down:
+	{reorg $2AAE91}
+	lda.w #$0200
+	sta.b $08
+	pea ($2AAECE - 1) & $00FFFF
+	bra $2AAEA1
+{loadpc}
+
+
+{savepc}
 	{reorg $08BF41}
 	// Allow pressing select + start to simulate death.
 	// This hook activates when the game is checking to see whether the
