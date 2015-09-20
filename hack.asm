@@ -19,7 +19,7 @@ incbin "Rockman X 2 (J).smc"
 // Version tags
 eval version_major 1
 eval version_minor 2
-eval version_revision 0
+eval version_revision 1
 // RAM addresses
 eval title_screen_option $7E003C
 eval controller_1_current $7E00A8
@@ -693,7 +693,7 @@ title_screen_string_table:
 // Replacement copyright string.  @ in the X2 font is the copyright symbol.
 copyright_string:
 	db .rockman_x2_end - .rockman_x2_start, $20
-	dw $1356 >> 1
+	dw $1256 >> 1
 .rockman_x2_start:
 	db "ROCKMAN X2"
 .rockman_x2_end:
@@ -701,21 +701,26 @@ copyright_string:
 	// over the space.  I don't see a need to do that - I'll draw a copyright
 	// symbol in the first place.
 	db .capcom_end - .capcom_start, $20
-	dw $13CC >> 1
+	dw $128C >> 1
 .capcom_start:
 	db "@ CAPCOM CO.,LTD.1994"
 .capcom_end:
-	// My custom message.
+	// My custom message.  The opening quotation mark is flipped.
 	db 1, $60
-	dw $1486 >> 1
+	dw $138E >> 1
 	db '"'
 	db .practice_end - .practice_start, $20
-	dw $1488 >> 1
+	dw $1390 >> 1
 .practice_start:
-	db "PRACTICE EDITION",'"'," BY MYRIA"
+	db "PRACTICE EDITION",'"'
 .practice_end:
+	db .credit_end - .credit_start, $20
+	dw $144E >> 1
+.credit_start:
+	db "BY MYRIA AND TOTAL"
+.credit_end:
 	db .version_end - .version_start, $20
-	dw $14CE >> 1
+	dw $148E >> 1
 .version_start:
 	db "2014-2015 Ver. "
 	db $30 + {version_major}, '.', $30 + {version_minor}, $30 + {version_revision}
