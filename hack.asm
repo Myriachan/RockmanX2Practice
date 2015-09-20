@@ -423,7 +423,7 @@ choose_level_hook:
 // so we have to move the table order to expand it.  As is typical, it's
 // in bank 6, but it's only 4 bytes.
 title_cursor_moved:
-	lda.w title_rockman_location, x
+	lda.l title_rockman_location, x
 	sta.w $7E09E0
 
 	// Draw the currently-highlighted string.
@@ -435,7 +435,7 @@ title_cursor_moved:
 	and.w #$00FF
 	asl
 	tax
-	lda.w title_screen_string_table, x
+	lda.l title_screen_string_table, x
 	sta.b $10
 	sep #$20
 
@@ -683,13 +683,6 @@ option_set_4:
 	{optionset s4, $20, $20, $20, $24}
 	db 0
 
-// Pointers to the option strings.
-title_screen_string_table:
-	dw option_set_1
-	dw option_set_2
-	dw option_set_3
-	dw option_set_4
-
 // Replacement copyright string.  @ in the X2 font is the copyright symbol.
 copyright_string:
 	db .rockman_x2_end - .rockman_x2_start, $20
@@ -727,10 +720,6 @@ copyright_string:
 .version_end:
 	// Terminates sequence of VRAM strings.
 	db 0
-
-// Y coordinates of Rockman corresponding to each option.
-title_rockman_location:
-	db $96, $A6, $B6, $C6
 
 {loadpc}
 
@@ -1043,6 +1032,19 @@ state_data_100percent_ostrich3rd:
 	db $00,$80,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
 	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$5C,$00,$DC,$00,$DC
 	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$FF,$00,$00,$00,$00,$00,$58
+
+// Unrelated stuff moved here.
+
+// Pointers to the option strings.
+title_screen_string_table:
+	dw option_set_1
+	dw option_set_2
+	dw option_set_3
+	dw option_set_4
+
+// Y coordinates of Rockman corresponding to each option.
+title_rockman_location:
+	db $96, $A6, $B6, $C6
 
 {loadpc}
 
