@@ -43,6 +43,7 @@ eval sram_wram_7F0000 $730000
 eval sram_wram_7F8000 $740000
 eval sram_vram_0000 $750000
 eval sram_vram_8000 $760000
+eval sram_cgram $772000
 eval sram_dma_bank $770000
 eval sram_validity $774000
 eval sram_saved_sp $774004
@@ -1199,29 +1200,29 @@ nmi_hook:
 	dw $1000 | $2100, $80
 	dw $1000 | $4200, $00
 	// Single address, B bus -> A bus.  B address = reflector to WRAM ($2180).
-	dw $0000 | $4310, $8080  // direction = B->A, B addr = $2180
-	// Copy 7E0000-7E7FFF to 710000-717FFF.
+	dw $0000 | $4310, $8080  // direction = B->A, byte reg, B addr = $2180
+	// Copy WRAM 7E0000-7E7FFF to SRAM 710000-717FFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0071  // A addr = $71xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
 	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
 	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy 7E8000-7EFFFF to 720000-727FFF.
+	// Copy WRAM 7E8000-7EFFFF to SRAM 720000-727FFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0072  // A addr = $72xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
 	dw $0000 | $2181, $8000  // WRAM addr = $xx8000
 	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy 7F0000-7F7FFF to 730000-737FFF.
+	// Copy WRAM 7F0000-7F7FFF to SRAM 730000-737FFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0073  // A addr = $73xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
 	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
 	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy 7F8000-7FFFFF to 740000-747FFF.
+	// Copy WRAM 7F8000-7FFFFF to SRAM 740000-747FFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0074  // A addr = $74xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
@@ -1229,21 +1230,28 @@ nmi_hook:
 	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
 	// Address pair, B bus -> A bus.  B address = VRAM read ($2139).
-	dw $0000 | $4310, $3981  // direction = B->A, B addr = $2139
+	dw $0000 | $4310, $3981  // direction = B->A, word reg, B addr = $2139
 	dw $1000 | $2115, $0000  // VRAM address increment mode.
-	// Copy VRAM 0000-7FFF to 750000-757FFF.
+	// Copy VRAM 0000-7FFF to SRAM 750000-757FFF.
 	dw $0000 | $2116, $0000  // VRAM address >> 1.
 	dw $9000 | $2139, $0000  // VRAM dummy read.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0075  // A addr = $75xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy VRAM 8000-7FFF to 760000-767FFF.
+	// Copy VRAM 8000-7FFF to SRAM 760000-767FFF.
 	dw $0000 | $2116, $4000  // VRAM address >> 1.
 	dw $9000 | $2139, $0000  // VRAM dummy read.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0076  // A addr = $76xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy CGRAM 000-1FF to SRAM 772000-7721FF.
+	dw $1000 | $2121, $00    // CGRAM address
+	dw $0000 | $4310, $3B80  // direction = B->A, byte reg, B addr = $213B
+	dw $0000 | $4312, $2000  // A addr = $xx2000
+	dw $0000 | $4314, $0077  // A addr = $77xxxx, size = $xx00
+	dw $0000 | $4316, $0002  // size = $02xx ($0200), unused bank reg = $00.
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
 	// Done
 	dw $0000, .save_return
@@ -1329,28 +1337,28 @@ nmi_hook:
 	dw $1000 | $4200, $00
 	// Single address, A bus -> B bus.  B address = reflector to WRAM ($2180).
 	dw $0000 | $4310, $8000  // direction = A->B, B addr = $2180
-	// Copy 710000-717FFF to 7E0000-7E7FFF.
+	// Copy SRAM 710000-717FFF to WRAM 7E0000-7E7FFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0071  // A addr = $71xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
 	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
 	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy 720000-727FFF to 7E8000-7EFFFF.
+	// Copy SRAM 720000-727FFF to WRAM 7E8000-7EFFFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0072  // A addr = $72xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
 	dw $0000 | $2181, $8000  // WRAM addr = $xx8000
 	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy 730000-737FFF to 7F0000-7F7FFF.
+	// Copy SRAM 730000-737FFF to WRAM 7F0000-7F7FFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0073  // A addr = $73xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
 	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
 	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy 740000-747FFF to 7F8000-7FFFFF.
+	// Copy SRAM 740000-747FFF to WRAM 7F8000-7FFFFF.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0074  // A addr = $74xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
@@ -1360,17 +1368,24 @@ nmi_hook:
 	// Address pair, A bus -> B bus.  B address = VRAM write ($2118).
 	dw $0000 | $4310, $1801  // direction = A->B, B addr = $2118
 	dw $1000 | $2115, $0000  // VRAM address increment mode.
-	// Copy VRAM 750000-757FFF to 0000-7FFF.
+	// Copy SRAM 750000-757FFF to VRAM 0000-7FFF.
 	dw $0000 | $2116, $0000  // VRAM address >> 1.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0075  // A addr = $75xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
-	// Copy VRAM 760000-767FFF to 8000-7FFF.
+	// Copy SRAM 760000-767FFF to VRAM 8000-7FFF.
 	dw $0000 | $2116, $4000  // VRAM address >> 1.
 	dw $0000 | $4312, $0000  // A addr = $xx0000
 	dw $0000 | $4314, $0076  // A addr = $76xxxx, size = $xx00
 	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy SRAM 772000-7721FF to CGRAM 000-1FF.
+	dw $1000 | $2121, $00    // CGRAM address
+	dw $0000 | $4310, $2200  // direction = A->B, byte reg, B addr = $2122
+	dw $0000 | $4312, $2000  // A addr = $xx2000
+	dw $0000 | $4314, $0077  // A addr = $77xxxx, size = $xx00
+	dw $0000 | $4316, $0002  // size = $02xx ($0200), unused bank reg = $00.
 	dw $1000 | $420B, $02    // Trigger DMA on channel 1
 	// Done
 	dw $0000, .load_return
