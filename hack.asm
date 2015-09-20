@@ -33,8 +33,21 @@ eval state_vars $7E1FA0
 eval current_level $7E1FAD
 eval xhunter_level $7E1FAE
 eval life_count $7E1FB3
+// ROM addresses
+eval rom_play_sound $008549
 // SRAM addresses for saved states
+eval sram_start $700000
+eval sram_wram_7E0000 $710000
+eval sram_wram_7E8000 $720000
+eval sram_wram_7F0000 $730000
+eval sram_wram_7F8000 $740000
+eval sram_vram_0000 $750000
+eval sram_vram_8000 $760000
 eval sram_dma_bank $770000
+eval sram_validity $774000
+eval sram_saved_sp $774004
+eval sram_vm_return $774006
+eval sram_size $080000
 // Mode IDs (specific to this hack)
 eval mode_id_anypercent 0  // Any%, which just means Zero isn't saved.
 // Route IDs
@@ -62,6 +75,8 @@ eval stage_select_id_hunter $FF
 eval stage_select_id_x $80
 eval unknown_level_flag_value_normal $01
 eval unknown_level_flag_value_xhunter $FF
+eval magic_sram_tag_lo $454D  // Combined, these say "MEOW"
+eval magic_sram_tag_hi $574F
 
 
 {savepc}
@@ -1046,7 +1061,7 @@ state_data_100percent_ostrich3rd:
 	{reorg $03FA00}
 nmi_hook:
 
-	// Rather typical NMI prolog code
+	// Rather typical NMI prolog code - same as real one.
 	rep #$38
 	pha
 	phx
@@ -1060,45 +1075,89 @@ nmi_hook:
 	// Only execute when select is pressed.
 	lda.b {controller_1_current}
 	bit.w #$2000
-	beq .c_skip_lda
-	bra .check_controller
+	beq .return_normal
 
-.c:
-	lda.b {controller_1_current}
-.c_skip_lda:
-	sta.l $704218
-.d:
+	// Mask controller.
+	bit.b {controller_1_unknown2}
+	beq .return_normal
+
+	// Check for Select + R.
+	and.w #$2030
+	cmp.w #$2010
+	beq .select_r
+	cmp.w #$2020
+	bne .return_normal
+	jmp .select_l
+
+// Resume NMI handler in RAM, skipping the register pushes.
+.return_normal:
 	rep #$38
-	jml $7E200B          // Jump to normal NMI handler in RAM, skipping the
-	                     // prolog code, since we already did it.
+	jml $7E200B
 
-.check_controller:
-	// Clear the bank register so that we know register writes work correctly.
-	ldy.w #$0000
+// Play an error sound effect.
+.error_sound_return:
+	// Clear the bank register, because we don't know how it was set.
+	pea $0000
+	plb
+	plb
+
+	sep #$20
+	lda.b #$5A
+	jsl {rom_play_sound}
+	bra .return_normal
+
+
+// Select and R pushed = save.
+.select_r:
+	// Clear the bank register, because we don't know how it was set.
+	pea $0000
+	plb
+	plb
+
+	// Mark SRAM's contents as invalid.
+	lda.w #$1234
+	sta.l {sram_validity} + 0
+	sta.l {sram_validity} + 2
+
+	// Test SRAM to verify that 256 KB is present.  Protects against bad
+	// behavior on emulators and Super UFO.
+	sep #$10
+	lda.w #$1234
+	ldy.b #{sram_start} >> 16
+
+	// Note that we can't do a write-read-write-read pattern due to potential
+	// "open bus" issues, and because mirroring is also possible.
+	// Essentially, this code verifies that all 8 banks are storing
+	// different data simultaneously.
+.sram_test_write_loop:
+	phy
+	plb
+	sta.w $0000
+	inc
+	iny
+	cpy.b #({sram_start} + {sram_size}) >> 16
+	bne .sram_test_write_loop
+
+	// Read the data back and verify it.
+	lda.w #$1234
+	ldy.b #{sram_start} >> 16
+.sram_test_read_loop:
+	phy
+	plb
+	cmp.w $0000
+	bne .error_sound_return
+	inc
+	iny
+	cpy.b #({sram_start} + {sram_size}) >> 16
+	bne .sram_test_read_loop
+
+	// Store DMA registers' values to SRAM.
+	rep #$30
+	ldy.w #0
 	phy
 	plb
 	plb
-
-	// Mask controller.
-	lda.b {controller_1_current}
-	and.b {controller_1_unknown2}
-	bne .have_controller_1_data
-	bra .jmp_b
-
-.have_controller_1_data:
-	lda.b {controller_1_current}
-	and.w #$2010   // Select + R
-	cmp.w #$2010
-	beq .select_r_pressed
-.jmp_b:
-	jmp .b
-
-.select_r_pressed:
-	sep #$20
-
-	// Store DMA to SRAM
-	ldy.w #0
-	ldx.w #0
+	tyx
 
 	sep #$20
 .save_dma_reg_loop:
@@ -1117,55 +1176,216 @@ nmi_hook:
 	inx
 	ldy.w #0
 	jmp .save_dma_reg_loop
-	// End of DMA to SRAM
+	// End of DMA registers to SRAM.
 
 .save_dma_regs_done:
-	jsr .ppuoff
-	lda.b #$80
-	sta.w $4310
-	jsr .func_dma2
+	// Run the "VM" to do a series of PPU writes.
+	rep #$30
 
+	// X = address in this bank to load from.
+	// B = bank to read from and write to
+	ldx.w #.save_write_table
+.run_vm:
+	pea (.vm >> 16) * $0101
+	plb
+	plb
+	jmp .vm
+
+// List of addresses to write to do the DMAs.
+// First word is address; second is value.  $1000 and $8000 are flags.
+// $1000 = byte read/write.  $8000 = read instead of write.
+.save_write_table:
+	// Turn PPU off
+	dw $1000 | $2100, $80
+	dw $1000 | $4200, $00
+	// Single address, B bus -> A bus.  B address = reflector to WRAM ($2180).
+	dw $0000 | $4310, $8080  // direction = B->A, B addr = $2180
+	// Copy 7E0000-7E7FFF to 710000-717FFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0071  // A addr = $71xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
+	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy 7E8000-7EFFFF to 720000-727FFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0072  // A addr = $72xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $8000  // WRAM addr = $xx8000
+	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy 7F0000-7F7FFF to 730000-737FFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0073  // A addr = $73xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
+	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy 7F8000-7FFFFF to 740000-747FFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0074  // A addr = $74xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $8000  // WRAM addr = $xx8000
+	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Address pair, B bus -> A bus.  B address = VRAM read ($2139).
+	dw $0000 | $4310, $3981  // direction = B->A, B addr = $2139
+	dw $1000 | $2115, $0000  // VRAM address increment mode.
+	// Copy VRAM 0000-7FFF to 750000-757FFF.
+	dw $0000 | $2116, $0000  // VRAM address >> 1.
+	dw $9000 | $2139, $0000  // VRAM dummy read.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0075  // A addr = $75xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy VRAM 8000-7FFF to 760000-767FFF.
+	dw $0000 | $2116, $4000  // VRAM address >> 1.
+	dw $9000 | $2139, $0000  // VRAM dummy read.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0076  // A addr = $76xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Done
+	dw $0000, .save_return
+
+.save_return:
+	// Restore null bank.
+	pea $0000
+	plb
+	plb
+
+	// Mark the save as valid.
+	rep #$30
+	lda.w #{magic_sram_tag_lo}
+	sta.l {sram_validity}
+	lda.w #{magic_sram_tag_hi}
+	sta.l {sram_validity} + 2
+
+	// Save stack pointer.
+	tsa
+	sta.l {sram_saved_sp}
+
+.register_restore_return:
+	// Restore register state for return.
 	sep #$20
-	rep #$10
-	lda.b #$81    // 00 load, 80 save
-	sta.w $4310
-	lda.b #$39
-	sta.w $4311
-	jmp .end
+	lda.b $C3
+	sta.w $4200
+	lda.b $C4
+	sta.w $420C
+	lda.b $B4
+	sta.w $2100
 
-.b:
-	rep #$20
-	lda.b {controller_1_unknown2}
-	and.b {controller_1_current}
-	bne .have_controller_1_data_2
+	lda.w $2142
+	sta.l $7EFFFE
+
+	// Wait for V-blank to end then start again.
+//.nmi_wait_loop_set:
+//	lda.w $4212
+//	bmi .nmi_wait_loop_set
+//.nmi_wait_loop_clear:
+//	lda.w $4212
+//	bpl .nmi_wait_loop_clear
+
+	rep #$38
+	jml $7E200B          // Jump to normal NMI handler in RAM, skipping the
+	                     // prolog code, since we already did it.
+
+// Select and L pushed = load.
+.select_l:
+	// Clear the bank register, because we don't know how it was set.
+	pea $0000
+	plb
+	plb
+
+	// Check whether SRAM contents are valid.
+	lda.l {sram_validity} + 0
+	cmp.w #{magic_sram_tag_lo}
+	bne .jmp_error_sound
+	lda.l {sram_validity} + 2
+	cmp.w #{magic_sram_tag_hi}
+	bne .jmp_error_sound
+
+	// Stop sound effects by sending command to SPC700
+	stz.w $2141    // write zero to both $2141 and $2142
 	sep #$20
-	jmp .c
-
-.have_controller_1_data_2:
-	lda.b {controller_1_current}
-	and.w #$2020   // Select + L
-	cmp.w #$2020
-	beq .select_l_pressed
-	sep #$20
-	jmp .c
-
-.select_l_pressed:
-	sep #$20
-
-	// Stop sound effects
-	stz.w $2141
-	stz.w $2142
 	stz.w $2143
 	lda.b #$F1
 	sta.w $2140
 
-	stz.w $420C
-	jsr .ppuoff
-	stz.w $4310
-	jsr .func_dma2
+	// Execute VM to do DMAs
+	ldx.w #.load_write_table
+	jmp .run_vm
 
-	// Restart music
-	rep #$20
+// Needed to put this somewhere.
+.jmp_error_sound:
+	jmp .error_sound_return
+
+// Register write data table for loading saves.
+.load_write_table:
+	// Disable HDMA
+	dw $1000 | $420C, $00
+	// Turn PPU off
+	dw $1000 | $2100, $80
+	dw $1000 | $4200, $00
+	// Single address, A bus -> B bus.  B address = reflector to WRAM ($2180).
+	dw $0000 | $4310, $8000  // direction = A->B, B addr = $2180
+	// Copy 710000-717FFF to 7E0000-7E7FFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0071  // A addr = $71xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
+	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy 720000-727FFF to 7E8000-7EFFFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0072  // A addr = $72xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $8000  // WRAM addr = $xx8000
+	dw $1000 | $2183, $00    // WRAM addr = $7Exxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy 730000-737FFF to 7F0000-7F7FFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0073  // A addr = $73xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $0000  // WRAM addr = $xx0000
+	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy 740000-747FFF to 7F8000-7FFFFF.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0074  // A addr = $74xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($8000), unused bank reg = $00.
+	dw $0000 | $2181, $8000  // WRAM addr = $xx8000
+	dw $1000 | $2183, $01    // WRAM addr = $7Fxxxx  (bank is relative to $7E)
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Address pair, A bus -> B bus.  B address = VRAM write ($2118).
+	dw $0000 | $4310, $1801  // direction = A->B, B addr = $2118
+	dw $1000 | $2115, $0000  // VRAM address increment mode.
+	// Copy VRAM 750000-757FFF to 0000-7FFF.
+	dw $0000 | $2116, $0000  // VRAM address >> 1.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0075  // A addr = $75xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Copy VRAM 760000-767FFF to 8000-7FFF.
+	dw $0000 | $2116, $4000  // VRAM address >> 1.
+	dw $0000 | $4312, $0000  // A addr = $xx0000
+	dw $0000 | $4314, $0076  // A addr = $76xxxx, size = $xx00
+	dw $0000 | $4316, $0080  // size = $80xx ($0000), unused bank reg = $00.
+	dw $1000 | $420B, $02    // Trigger DMA on channel 1
+	// Done
+	dw $0000, .load_return
+
+.load_return:
+	// Load stack pointer.  We've been very careful not to use the stack
+	// during the memory DMA.  We can now use the saved stack.
+	rep #$30
+	lda.l {sram_saved_sp}
+	tas
+
+	// Restore null bank now that we have a working stack.
+	pea $0000
+	plb
+	plb
 
 	// Rewrite inputs in ram to reflect the loading inputs and not saving inputs
 	lda.b {controller_1_current}
@@ -1198,99 +1418,53 @@ nmi_hook:
 	jmp .load_dma_regs_loop
 	// End of DMA from SRAM
 
-	// Continue with WRAM DMA and cleanup
 .load_dma_regs_done:
+	// Restore registers and return.
+	jmp .register_restore_return
+
+
+.vm:
+	// Data format: xx xx yy yy
+	// xxxx = little-endian address to write to .vm's bank
+	// yyyy = little-endian value to write
+	// If xxxx has high bit set, read and discard instead of write.
+	// If xxxx has bit 12 set ($1000), byte instead of word.
+	// If yyyy has $DD in the low half, it means that this operation is a byte
+	// write instead of a word write.  If xxxx is $0000, end the VM.
+	rep #$30
+	// Read address to write to
+	lda.w $0000, x
+	beq .vm_done
+	tay
+	inx
+	inx
+	// Check for byte mode
+	bit.w #$1000
+	beq .vm_word_mode
+	and.w #~$1000
+	tay
 	sep #$20
-	rep #$10
-	lda.b #$01
-	sta.w $4310
-	lda.b #$80
-	sta.w $2115
-	lda.b #$18
-	sta.w $4311
-	jmp .end
+.vm_word_mode:
+	// Read value
+	lda.w $0000, x
+	inx
+	inx
+.vm_write:
+	// Check for read mode (high bit of address)
+	cpy.w #$8000
+	bcs .vm_read
+	sta $0000, y
+	bra .vm
+.vm_read:
+	// "Subtract" $8000 from y by taking advantage of bank wrapping.
+	lda $8000, y
+	bra .vm
 
-.ppuoff:
-	lda.b #$80
-	//sta.b $13
-	sta.w $2100
-	stz.w $4200
-	rts
+.vm_done:
+	// A, X and Y are 16-bit at exit.
+	// Return to caller.  The word in the table after the terminator is the
+	// code address to return to.
+	jmp ($0002,x)
 
-.func_dma1:
-	ldx.w #$7500  // SRAM address >> 8
-	ldy.w #$0000  // VRAM address >> 1
-	lda.b #$80    // size >> 8
-	jsr .func_dma1b
-	ldx.w #$7600  // SRAM address >> 8
-	ldy.w #$4000  // VRAM address >> 1
-	lda.b #$80    // size >> 8
-	jsr .func_dma1b
-	rts
-
-.func_dma1b:
-	sty.w $2116
-	stz.w $4312
-	stx.w $4313
-	stz.w $4315
-	sta.w $4316
-	stz.w $2115
-	lda.w $4311
-	cmp.b #$39
-	bne .skip_2139_write
-	lda.w $2139
-.skip_2139_write:
-	lda.b #$02
-	sta.w $420B
-	rts
-
-.func_dma2:
-	plx
-	stx.w $4318          // HDMA current low = 0
-
-	stz.w $2181          // WRAM low = 0
-	stz.w $4312          // HDMA start low = 0
-
-	ldy.w #$0071         // Copy to bank 71
-	ldx.w #$0000         // Copy 7FFF bytes from 7E0000-7E7FFF
-	jsr .func_dma2b
-	iny                  // Copy to bank 72
-	ldx.w #$0080         // Copy 7FFF bytes from 7E8000-7EFFFF
-	jsr .func_dma2b
-	iny                  // Copy to bank 73
-	ldx.w #$0100         // Copy 7FFF bytes from 7F0000-7F7FFF
-	jsr .func_dma2b
-	iny                  // Copy to bank 74
-	ldx.w #$0180         // Copy 7FFF bytes from 7F8000-7FFFFF
-	jsr .func_dma2b
-
-	ldx.w $4318
-	phx
-	rts
-
-.func_dma2b:
-	stz.w $4313          // HDMA start high
-	sty.w $4314          // HDMA start bank = Y
-	stx.w $2182          // WRAM start high + bank
-	lda.b #$80
-	sta.w $4311          // Select WRAM for DMA
-	sta.w $4316          // Bytes to be transferred, 0x7FFF bytes (FFFF-8000)
-	lda.b #$02
-	sta.w $420B          // Start DMA
-	rts
-
-.end:
-	jsr .func_dma1
-
-	lda.b $C3
-	sta.w $4200
-	lda.b $C4
-	sta.w $420C
-	lda.b $B4
-	sta.w $2100
-
-	lda.w $2142
-	sta.l $7EFFFE
-	jmp .d
 
 {loadpc}
