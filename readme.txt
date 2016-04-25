@@ -1,5 +1,5 @@
-Rockman X2 Speedrunner Practice Edition, version 1.21
-by Myria and Total, 2014-2015
+Rockman X2 Speedrunner Practice Edition, version 1.30
+by Myria and Total, 2014-2016
 
 
 About
@@ -56,7 +56,7 @@ Before: 42aecc0aa8a369ab42056ebd4c7d0ac4
 
 Following patching, it will have:
 
-After:  451800aa842228d6c5c931c65cd0213c
+After:  4a4c41523d9424906ca206294559d123
 
 
 Not-So-Frequently-Asked Questions
@@ -75,18 +75,21 @@ A. Get byuu's "bass" assembler, name the executable bass.exe, put an
 
 Q. What's the source code license?
 
-A. Since ROM hacks a legal gray area anyway, I don't see the point of stating
-   a license for this.
+A. Since ROM hacks are a legal gray area anyway, I don't see the point of
+   stating a license for this.  You can consider it public-domain.
 
 
 Credits
 
-Assembly hacking by Myria.
-Saved state data by Myria and Luiz Miguel.
+Assembly hacking by Myria and Total.
+Saved state data by Myria, Luiz Miguel and Trogdor.
 Moral support by Domalix and Luiz Miguel.  <3 both
 
 
 Version History
+
+1.30:  2016/04/25  4a4c41523d9424906ca206294559d123
+*   Replaced 100% with Low% by request.
 
 1.21:  2015/09/19  03186c9a4c7ef344b45a9be7d8b3171d
 *   Rewrote the saved state code to be much more stable.

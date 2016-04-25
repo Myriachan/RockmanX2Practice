@@ -18,8 +18,8 @@ incbin "Rockman X 2 (J).smc"
 // Constants
 // Version tags
 eval version_major 1
-eval version_minor 2
-eval version_revision 1
+eval version_minor 3
+eval version_revision 0
 // RAM addresses
 eval title_screen_option $7E003C
 eval controller_1_current $7E00A8
@@ -546,31 +546,31 @@ route_table_anypercent_stag3rd:
 	dw state_data_anypercent_stag3rd.gator
 	dw state_data_anypercent_stag3rd.snail
 
-route_table_100percent_ostrich3rd:
-	// For stage select
-	dw state_data_100percent_ostrich3rd.sponge
-	// Without select button
-	dw state_data_100percent_ostrich3rd.sponge
-	dw state_data_100percent_ostrich3rd.moth
-	dw 0  // placeholder for the X
-	dw state_data_100percent_ostrich3rd.stag
-	dw state_data_100percent_ostrich3rd.centipede
-	dw state_data_100percent_ostrich3rd.ostrich
-	dw state_data_100percent_ostrich3rd.crab
-	dw state_data_100percent_ostrich3rd.intro
-	dw state_data_100percent_ostrich3rd.gator
-	dw state_data_100percent_ostrich3rd.snail
-	// With select button
-	dw state_data_100percent_ostrich3rd.violen            // \   These ones are replaced
-	dw state_data_100percent_ostrich3rd.serges            //  \  versus normal.
-	dw state_data_100percent_ostrich3rd.agile             //   > X becomes Agile.
-	dw state_data_100percent_ostrich3rd.teleporter        //  /
-	dw state_data_100percent_ostrich3rd.sigma             // /
-	dw state_data_100percent_ostrich3rd.ostrich
-	dw state_data_100percent_ostrich3rd.crab
-	dw state_data_100percent_ostrich3rd.intro
-	dw state_data_100percent_ostrich3rd.gator
-	dw state_data_100percent_ostrich3rd.snail
+//route_table_100percent_ostrich3rd:
+//	// For stage select
+//	dw state_data_100percent_ostrich3rd.sponge
+//	// Without select button
+//	dw state_data_100percent_ostrich3rd.sponge
+//	dw state_data_100percent_ostrich3rd.moth
+//	dw 0  // placeholder for the X
+//	dw state_data_100percent_ostrich3rd.stag
+//	dw state_data_100percent_ostrich3rd.centipede
+//	dw state_data_100percent_ostrich3rd.ostrich
+//	dw state_data_100percent_ostrich3rd.crab
+//	dw state_data_100percent_ostrich3rd.intro
+//	dw state_data_100percent_ostrich3rd.gator
+//	dw state_data_100percent_ostrich3rd.snail
+//	// With select button
+//	dw state_data_100percent_ostrich3rd.violen            // \   These ones are replaced
+//	dw state_data_100percent_ostrich3rd.serges            //  \  versus normal.
+//	dw state_data_100percent_ostrich3rd.agile             //   > X becomes Agile.
+//	dw state_data_100percent_ostrich3rd.teleporter        //  /
+//	dw state_data_100percent_ostrich3rd.sigma             // /
+//	dw state_data_100percent_ostrich3rd.ostrich
+//	dw state_data_100percent_ostrich3rd.crab
+//	dw state_data_100percent_ostrich3rd.intro
+//	dw state_data_100percent_ostrich3rd.gator
+//	dw state_data_100percent_ostrich3rd.snail
 
 route_table_anypercent_ostrich3rd:
 	// For stage select
@@ -598,11 +598,38 @@ route_table_anypercent_ostrich3rd:
 	dw state_data_anypercent_ostrich3rd.gator
 	dw state_data_anypercent_ostrich3rd.snail
 
+route_table_lowpercent:
+	// For stage select
+	dw state_data_lowpercent.sponge
+	// Without select button
+	dw state_data_lowpercent.sponge
+	dw state_data_lowpercent.moth
+	dw 0  // placeholder for the X
+	dw state_data_lowpercent.stag
+	dw state_data_lowpercent.centipede
+	dw state_data_lowpercent.ostrich
+	dw state_data_lowpercent.crab
+	dw state_data_lowpercent.intro
+	dw state_data_lowpercent.gator
+	dw state_data_lowpercent.snail
+	// With select button
+	dw state_data_lowpercent.violen                       // \   These ones are replaced
+	dw state_data_lowpercent.serges                       //  \  versus normal.
+	dw state_data_lowpercent.agile                        //   > X becomes Agile.
+	dw state_data_lowpercent.teleporter                   //  /
+	dw state_data_lowpercent.sigma                        // /
+	dw state_data_lowpercent.ostrich
+	dw state_data_lowpercent.crab
+	dw state_data_lowpercent.intro
+	dw state_data_lowpercent.gator
+	dw state_data_lowpercent.snail
+
 
 route_metatable:
 	dw route_table_anypercent_stag3rd
 	dw route_table_anypercent_ostrich3rd
-	dw route_table_100percent_ostrich3rd
+	// dw route_table_100percent_ostrich3rd
+	dw route_table_lowpercent
 
 
 {loadpc}
@@ -626,25 +653,25 @@ initial_menu_strings:
 		db .option1_{label}_end - .option1_{label}_begin, {attrib1}
 		dw $1492 >> 1
 	.option1_{label}_begin:
-		db "ANY` - STAG 3RD"
+		db "ANY`-STAG 3RD"
 	.option1_{label}_end:
 
 		db .option2_{label}_end - .option2_{label}_begin, {attrib2}
 		dw $1512 >> 1
 	.option2_{label}_begin:
-		db "ANY` - OSTRICH 3RD"
+		db "ANY`-OSTRICH 3RD"
 	.option2_{label}_end:
 
 		db .option3_{label}_end - .option3_{label}_begin, {attrib3}
 		dw $1592 >> 1
 	.option3_{label}_begin:
-		db "100` - OSTRICH 3RD"
+		db "LOW`"
 	.option3_{label}_end:
 
 		db .option4_{label}_end - .option4_{label}_begin, {attrib4}
 		dw $1612 >> 1
 	.option4_{label}_begin:
-		db "OPTION MODE"
+		db "OPTIONS"
 	.option4_{label}_end:
 
 		db 0
@@ -715,7 +742,7 @@ copyright_string:
 	db .version_end - .version_start, $20
 	dw $148E >> 1
 .version_start:
-	db "2014-2015 Ver. "
+	db "2014-2016 Ver. "
 	db $30 + {version_major}, '.', $30 + {version_minor}, $30 + {version_revision}
 .version_end:
 	// Terminates sequence of VRAM strings.
@@ -939,8 +966,103 @@ state_data_anypercent_ostrich3rd:
 	db $FF,$20,$01,$FF,$01,$3F,$00,$00,$00,$FF,$00,$00,$00,$00,$00,$58
 
 
-// State data for 100 % for the route with Overdrive Ostrich as the 3rd boss
-state_data_100percent_ostrich3rd:
+//// State data for 100 % for the route with Overdrive Ostrich as the 3rd boss
+//state_data_100percent_ostrich3rd:
+//.intro:
+//	//  0. Intro stage.  Copy of this data for posterity.  We actually
+//	// use Wire Sponge (i.e., the post-intro) data for the intro, so
+//	// that the Counter-Hunter dialogue doesn't repeat.
+//	// db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	// db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	// db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	// db $00,$10,$00,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+//	// Same as Wire Sponge data, except level ID is hacked to 0.
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	db $00,$10,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+//.sponge:
+//	//  1. Wire Sponge's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$02,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	db $00,$10,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+//.gator:
+//	//  2. Wheel Gator's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$08,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$8E,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	db $00,$00,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	db $40,$12,$01,$80,$00,$48,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+//.ostrich:
+//	//  3. Overdrive Ostrich's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$07,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$8E,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	db $00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	db $42,$14,$01,$A0,$00,$2D,$01,$04,$07,$00,$00,$00,$00,$00,$00,$58
+//.crab:
+//	//  4. Bubble Crab's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$03,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$8E,$00,$00,$00,$00,$00,$00,$00,$00,$00
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	db $4A,$16,$01,$A4,$00,$36,$03,$05,$80,$00,$00,$00,$00,$00,$00,$58
+//.stag:
+//	//  5. Flame Stag's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$04,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$8E,$8E,$00,$00,$00,$00,$00,$DC,$00,$00
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+//	db $CA,$18,$01,$E4,$00,$1B,$80,$06,$80,$00,$00,$00,$00,$00,$00,$58
+//.moth:
+//	//  6. Morph Moth's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$00,$40
+//	db $00,$00,$00,$02,$00,$01,$8E,$8E,$8E,$00,$00,$00,$00,$DC,$00,$00
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$DC
+//	db $EA,$1A,$01,$E6,$00,$09,$80,$01,$80,$00,$00,$00,$00,$00,$00,$58
+//.centipede:
+//	//  7. Magna Centipede's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$00,$20
+//	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$00,$00,$00,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$DC,$00,$C6,$00,$00,$00,$DC
+//	db $EE,$1C,$01,$E7,$00,$24,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+//.snail:
+//	//  8. Crystal Snail's stage - event flag hacked to E0 to stop Dr. Cain speech
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$06,$00,$E0
+//	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$00,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$80,$C7,$00,$00,$00,$DC
+//	db $FE,$1E,$01,$EF,$00,$51,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+//.violen:
+//	//  9. Violen's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$09,$00,$E0
+//	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$80,$4D,$00,$DC,$00,$DC
+//	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+//.serges:
+//	// 10. Serges's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0A,$01,$E0
+//	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$80,$55,$00,$DC,$00,$DC
+//	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+//.agile:
+//	// 11. Agile's stage
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0B,$02,$E0
+//	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC
+//	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+//.teleporter:
+//	// 12. Boss Repeats ("Teleporter" stage)
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0C,$03,$E0
+//	db $00,$80,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$5C,$00,$DC,$00,$DC
+//	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+//.sigma:
+//	// 13. Sigma (Magna Centipede redux)
+//	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$04,$E0
+//	db $00,$80,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
+//	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$5C,$00,$DC,$00,$DC
+//	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$FF,$00,$00,$00,$00,$00,$58
+
+
+// State data for Low % for the route with Overdrive Ostrich as the 3rd boss
+state_data_lowpercent:
 .intro:
 	//  0. Intro stage.  Copy of this data for posterity.  We actually
 	// use Wire Sponge (i.e., the post-intro) data for the intro, so
@@ -962,76 +1084,77 @@ state_data_100percent_ostrich3rd:
 	db $00,$10,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .gator:
 	//  2. Wheel Gator's stage
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$08,$00,$40
-	db $00,$00,$00,$02,$00,$01,$8E,$00,$00,$00,$00,$00,$00,$00,$00,$00
-	db $00,$00,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
-	db $40,$12,$01,$80,$00,$48,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
-.ostrich:
-	//  3. Overdrive Ostrich's stage
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$07,$00,$40
-	db $00,$00,$00,$02,$00,$01,$8E,$00,$00,$00,$00,$00,$00,$00,$00,$00
-	db $00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
-	db $42,$14,$01,$A0,$00,$2D,$01,$04,$07,$00,$00,$00,$00,$00,$00,$58
-.crab:
-	//  4. Bubble Crab's stage
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$03,$00,$40
-	db $00,$00,$00,$02,$00,$01,$8E,$00,$00,$00,$00,$00,$00,$00,$00,$00
-	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
-	db $4A,$16,$01,$A4,$00,$36,$03,$05,$80,$00,$00,$00,$00,$00,$00,$58
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$08,$00,$00
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	db $00,$00,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$48,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .stag:
-	//  5. Flame Stag's stage
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$04,$00,$40
-	db $00,$00,$00,$02,$00,$01,$8E,$8E,$00,$00,$00,$00,$00,$DC,$00,$00
-	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
-	db $CA,$18,$01,$E4,$00,$1B,$80,$06,$80,$00,$00,$00,$00,$00,$00,$58
+	//  3. Flame Stag's stage
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$04,$00,$00
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	db $00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$1B,$01,$04,$07,$00,$00,$00,$00,$00,$00,$58
 .moth:
-	//  6. Morph Moth's stage
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$00,$40
-	db $00,$00,$00,$02,$00,$01,$8E,$8E,$8E,$00,$00,$00,$00,$DC,$00,$00
-	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$DC
-	db $EA,$1A,$01,$E6,$00,$09,$80,$01,$80,$00,$00,$00,$00,$00,$00,$58
+	//  4. Morph Moth's stage
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$01,$00,$00
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+	db $00,$DC,$00,$00,$00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$09,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .centipede:
-	//  7. Magna Centipede's stage
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$00,$20
-	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$00,$00,$00,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$DC,$00,$C6,$00,$00,$00,$DC
-	db $EE,$1C,$01,$E7,$00,$24,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+	//  5. Magna Centipede's stage
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$00,$00
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+	db $00,$DC,$00,$00,$00,$DC,$00,$00,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$24,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .snail:
-	//  8. Crystal Snail's stage - event flag hacked to E0 to stop Dr. Cain speech
-	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$06,$00,$E0
-	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$00,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$80,$C7,$00,$00,$00,$DC
-	db $FE,$1E,$01,$EF,$00,$51,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+	//  6. Crystal Snail's stage
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$06,$00,$00
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$00,$00,$00,$00,$DC
+	db $00,$DC,$00,$00,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$51,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+.ostrich:
+	//  7. Overdrive Ostrich's stage
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$07,$00,$00
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$00,$00,$DC
+	db $00,$DC,$00,$00,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$2D,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+.crab:
+	//  8. Bubble Crab's stage - event flag hacked to E0 to stop Dr. Cain speech
+	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$03,$00,$E0
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$00,$00,$DC
+	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$00,$36,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .violen:
 	//  9. Violen's stage
 	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$09,$00,$E0
-	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$80,$4D,$00,$DC,$00,$DC
-	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$DC,$00,$DC
+	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$01,$3F,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .serges:
 	// 10. Serges's stage
 	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0A,$01,$E0
-	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$80,$55,$00,$DC,$00,$DC
-	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$DC,$00,$DC
+	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$01,$3F,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .agile:
 	// 11. Agile's stage
 	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0B,$02,$E0
-	db $00,$00,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC
-	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$DC,$00,$DC
+	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$01,$3F,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .teleporter:
 	// 12. Boss Repeats ("Teleporter" stage)
 	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$0C,$03,$E0
-	db $00,$80,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$5C,$00,$DC,$00,$DC
-	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$00,$00,$00,$00,$00,$00,$58
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$DC,$00,$DC
+	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$01,$3F,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
 .sigma:
 	// 13. Sigma (Magna Centipede redux)
 	db $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$05,$04,$E0
-	db $00,$80,$00,$03,$00,$01,$8E,$8E,$8E,$8E,$00,$DC,$00,$DC,$00,$DC
-	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$5C,$00,$DC,$00,$DC
-	db $FF,$20,$01,$FF,$01,$3F,$80,$80,$80,$FF,$00,$00,$00,$00,$00,$58
+	db $00,$00,$00,$02,$00,$01,$00,$00,$00,$00,$00,$DC,$00,$DC,$00,$DC
+	db $00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$DC,$00,$00,$00,$00,$00,$00
+	db $00,$10,$40,$00,$01,$24,$00,$00,$00,$00,$00,$00,$00,$00,$00,$58
+
 
 // Unrelated stuff moved here.
 
