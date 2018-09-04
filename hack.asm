@@ -23,9 +23,14 @@ eval version_revision 0
 // RAM addresses
 eval title_screen_option $7E003C
 eval controller_1_current $7E00A8
-eval controller_1_unknown $7E00AA
-eval controller_1_unknown2 $7E00AC
-eval controller_1_new_presses $7E00AE
+eval controller_1_previous $7E00AA
+eval controller_1_new $7E00AC
+eval controller_2_current $7E00AE
+eval controller_2_previous $7E00B0
+eval controller_2_new $7E00B2
+eval screen_control_shadow $7E00B4
+eval nmi_control_shadow $7E00C3
+eval hdma_control_shadow $7E00C4
 eval current_play_state $7E00D2
 eval countdown_play_state $7E00D6
 eval unknown_level_flag $7E1EBF
@@ -33,8 +38,10 @@ eval state_vars $7E1FA0
 eval current_level $7E1FAD
 eval xhunter_level $7E1FAE
 eval life_count $7E1FB3
+eval spc_state_shadow $7EFFFE
 // ROM addresses
 eval rom_play_sound $008549
+eval rom_nmi_after_pushes $7E200B  // Rockman X2 has its NMI handler in RAM
 // SRAM addresses for saved states
 eval sram_start $700000
 eval sram_wram_7E0000 $710000
@@ -1220,10 +1227,10 @@ nmi_hook:
 	bne .return_normal
 	jmp .select_l
 
-// Resume NMI handler in RAM, skipping the register pushes.
+// Resume NMI handler, skipping the register pushes.
 .return_normal:
 	rep #$38
-	jml $7E200B
+	jml {rom_nmi_after_pushes}
 
 // Play an error sound effect.
 .error_sound_return:
@@ -1406,15 +1413,16 @@ nmi_hook:
 .register_restore_return:
 	// Restore register state for return.
 	sep #$20
-	lda.b $C3
+	lda.b {nmi_control_shadow}
 	sta.w $4200
-	lda.b $C4
+	lda.b {hdma_control_shadow}
 	sta.w $420C
-	lda.b $B4
+	lda.b {screen_control_shadow}
 	sta.w $2100
 
+	// Copy SPC state to SPC state shadow, or the game gets confused.
 	lda.w $2142
-	sta.l $7EFFFE
+	sta.l {spc_state_shadow}
 
 	// Wait for V-blank to end then start again.
 //.nmi_wait_loop_set:
@@ -1425,8 +1433,8 @@ nmi_hook:
 //	bpl .nmi_wait_loop_clear
 
 	rep #$38
-	jml $7E200B          // Jump to normal NMI handler in RAM, skipping the
-	                     // prolog code, since we already did it.
+	jml {rom_nmi_after_pushes}   // Jump to normal NMI handler, skipping the
+	                             // prolog code, since we already did it.
 
 // Select and L pushed = load.
 .select_l:

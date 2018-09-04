@@ -4,18 +4,19 @@ Memory layout:
 7E00AC	u16	Controller state new to this frame?
 7E00B5	u16	Stage-wide camera scroll X (+ is right)
 7E00B7	u16	Stage-wide camera scroll Y (+ is down)
-7E00D2  u8  Current game state
-7E00D6  u8  Countdown while in that game state
+7E00D2  u8	Current game state
+7E00D6  u8	Countdown while in that game state
 7E00E9	u8	Number of buster shots on the screen (#1)
-7E09D3  u8  Number of non-directional controller inputs (#1)?
-7E09D4  u8  Number of non-directional controller inputs (#2)?
+7E09D3  u8	Number of non-directional controller inputs (#1)?
+7E09D4  u8	Number of non-directional controller inputs (#2)?
 7E09FF	u8	X's current health (in stages; 20 = max with all hearts)
 7E0A0B  u8	Currently-selected weapon, times 2 (* 2 because weapon energies are 16-bit)
 7E0A0E	u8	Number of buster shots on the screen (#2)
+7E1E18  u8      Set to zero near the start of the NMI handler
 7E1E81	u8	Currently-selected level on level select screen
 7E1E82	u8	Copy of 7E1E81
 7E1E83	u8	Whether to show stage info at stage select (00=yes, FF=no)
-7E1FAD  u8  Current stage ID
+7E1FAD  u8	Current stage ID
 7E1FB3	u8	Extra life count
 7E1FB6	u8	Sub-Tank 1 (00=none, 80=empty...8E=full)
 7E1FB7	u8	Sub-Tank 2 (00=none, 80=empty...8E=full)
@@ -23,6 +24,11 @@ Memory layout:
 7E1FB9	u8	Sub-Tank 4 (00=none, 80=empty...8E=full)
 7E1FC0	s16	Spin Wheel weapon energy
 7E1FC4	s16	S.Chain weapon energy
+7E1FEF  u8[4]	jml nmi_handler (7E2000)    \  These three handlers are pointed
+7E1FF3  u8[4]	jml irq_handler (7E23C0)     > to by the ROM header, and by the
+7E1FF7  u8[4]	jml reset_handler (0080F2)  /  Cx4's header shadow RAM.
+7E2000  u8[]	NMI handler code
+7E23C0  u8[]	IRQ handler code
 
 Level Select IDs:
 00	02	Wire Sponge
